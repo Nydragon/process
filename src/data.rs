@@ -1,4 +1,4 @@
-use super::{cpu::CPU, memory::Memory};
+use super::{modules::cpu::CPU, modules::memory::Memory};
 use crate::{parser::Parser, timestamp};
 use serde::{Deserialize, Serialize};
 
