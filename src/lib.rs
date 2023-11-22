@@ -1,5 +1,5 @@
 pub mod data;
 mod helper;
-mod modules;
+pub mod modules;
 mod parser;
 mod process;
