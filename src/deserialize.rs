@@ -377,3 +377,29 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         todo!()
     }
 }
+
+mod test {
+    use super::*;
+
+    #[derive(Deserialize, Debug, PartialEq, Eq)]
+    struct Example {
+        value1: u32,
+        name: String,
+    }
+
+    #[test]
+    fn test_deserialize() {
+        let meminfo = "
+            Value1:       32587776 kB
+            Name:         Test";
+
+        let parsed = from_str::<Example>(meminfo).unwrap();
+
+        let comp = Example {
+            value1: 32587776,
+            name: String::from("Test"),
+        };
+
+        assert_eq!(parsed, comp)
+    }
+}
