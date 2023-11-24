@@ -16,5 +16,6 @@ allowed_types = [
     "refactor",
     "perf",
     "test",
+    "wip",
 ]
 merge_commit = true
