@@ -9,34 +9,48 @@ use serde::{Deserialize, Serialize};
 pub struct CPU {
     processor: u16,
     vendor_id: String,
+    #[serde(rename(deserialize = "cpu family"))]
     cpu_family: u16,
     model: usize,
+    #[serde(rename(deserialize = "model name"))]
     model_name: String,
-    microcode: u32,
-    cpu_mhz: f32,
+    microcode: String,
+    #[serde(rename(deserialize = "cpu MHz"))]
+    cpu_mhz: String, // IMPLEMENT FLOAT PARSING
+    #[serde(rename(deserialize = "cache size"))]
     cache_size: usize,
+    #[serde(rename(deserialize = "physical id"))]
     physical_id: u16,
     siblings: u16,
+    #[serde(rename(deserialize = "core id"))]
     core_id: u16,
+    #[serde(rename(deserialize = "cpu cores"))]
     cpu_cores: u16,
     apicid: u16,
+    #[serde(rename(deserialize = "initial apicid"))]
     initial_apicid: u16,
     fpu: bool,
     fpu_exception: bool,
+    #[serde(rename(deserialize = "cpuid level"))]
     cpuid_level: u16,
     wp: bool,
-    flags: Vec<String>,
-    vmx_flags: Vec<String>,
-    bugs: Vec<String>,
-    bogomips: f32,
-    clflush: u16,
+    flags: String, //Vec<String>,
+    #[serde(rename(deserialize = "vmx flags"))]
+    vmx_flags: String, //Vec<String>,
+    bugs: String,  // Vec<String>,
+    bogomips: String,
+    #[serde(rename(deserialize = "clflush size"))]
+    clflush_size: u16,
     cache_alignment: u16,
+    #[serde(rename(deserialize = "address sizes"))]
     address_sizes: String,
-    // power_management Option<>
+    power_management: Option<u8>,
 }
 
-impl Parser for CPU {
-    fn parse() -> Result<CPU, DataError> {
+pub type CPUs = Vec<CPU>;
+
+impl Parser for CPUs {
+    fn parse() -> Result<CPUs, DataError> {
         let file = std::fs::read_to_string("/proc/cpuinfo");
 
         if let Ok(content) = file {

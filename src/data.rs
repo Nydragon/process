@@ -1,4 +1,4 @@
-use super::{modules::cpu::CPU, modules::memory::Memory};
+use super::{modules::cpu::CPUs, modules::memory::Memory};
 use crate::{parser::Parser, timestamp};
 use serde::{Deserialize, Serialize};
 
@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Data {
     pub timestamp: u64,
-    pub cpu: Option<CPU>,
+    pub cpu: Option<CPUs>,
     pub memory: Option<Memory>,
 }
 
@@ -15,7 +15,7 @@ impl Data {
     pub fn new() -> Data {
         Data {
             timestamp: timestamp!(),
-            cpu: CPU::parse().ok(),
+            cpu: CPUs::parse().ok(),
             memory: Memory::parse().ok(),
         }
     }

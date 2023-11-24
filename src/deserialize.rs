@@ -1,5 +1,5 @@
 use core::panic;
-use pest::iterators::Pairs;
+use pest::iterators::{Pair, Pairs};
 use pest::Parser;
 use pest_derive::Parser;
 use serde::de::{self, DeserializeOwned, DeserializeSeed, Error, MapAccess};
@@ -36,7 +36,7 @@ pub struct Deserializer<'de> {
 impl<'de> Deserializer<'de> {
     pub fn from_str(input: &'de str) -> Self {
         let proc = ProcParser::parse(Rule::file, input).unwrap_or_else(|e| panic!("{}", e));
-        println!("{:?}", proc);
+        // println!("{:#?}", proc);
         Deserializer { input: proc }
     }
 }
@@ -83,7 +83,10 @@ where
                 Err(DeError::TrailingCharacters)
             }
         }
-        Err(e) => Err(DeError::Default),
+        Err(e) => {
+            println!("{}", e);
+            Err(DeError::Default)
+        }
     }
 }
 
@@ -119,16 +122,11 @@ impl<'de, 'a> MapAccess<'de> for Format<'a, 'de> {
         K: DeserializeSeed<'de>,
     {
         // Check if there are no more entries.
-        if self
-            .de
-            .input
-            .peek()
-            .is_some_and(|f| f.as_rule() == Rule::EOI)
-        {
-            self.de.input.next();
-
+        if self.de.input.len() == 0 {
             return Ok(None);
         }
+
+        // println!("{}", self.de.input);
 
         // Deserialize a map key.
         seed.deserialize(&mut *self.de).map(Some)
@@ -139,7 +137,6 @@ impl<'de, 'a> MapAccess<'de> for Format<'a, 'de> {
         V: DeserializeSeed<'de>,
     {
         let res = self.de.input.next();
-
         if res.is_some_and(|f| f.as_rule() != Rule::ass) {
             Err(Error::custom("Missing separator."))
         } else {
@@ -159,6 +156,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: de::Visitor<'de>,
     {
         match self.input.peek().unwrap().as_rule() {
+            Rule::section => self.deserialize_map(visitor),
             Rule::key => self.deserialize_string(visitor),
             Rule::value => self.deserialize_string(visitor),
             _ => unimplemented!(),
