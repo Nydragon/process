@@ -26,13 +26,3 @@ impl Default for Data {
         Self::new()
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_collect() {
-        Data::new();
-    }
-}

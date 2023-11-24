@@ -1,6 +1,16 @@
+use core::panic;
+use pest::iterators::Pairs;
+use pest::Parser;
+use pest_derive::Parser;
 use serde::de::{self, DeserializeOwned, DeserializeSeed, Error, MapAccess};
 use serde::Deserialize;
 use std::fmt::Display;
+use std::ops::{AddAssign, MulAssign};
+use std::str::FromStr;
+
+#[derive(Parser)]
+#[grammar = "proc.pest"]
+struct ProcParser;
 
 #[derive(Debug, PartialEq)]
 pub enum DeError {
@@ -9,6 +19,8 @@ pub enum DeError {
     ExpectedMapColon,
     ExpectedString,
     Default,
+    ExpectedInteger,
+    InvalidBool,
 }
 
 impl Display for DeError {
@@ -18,12 +30,42 @@ impl Display for DeError {
 }
 
 pub struct Deserializer<'de> {
-    input: &'de str,
+    input: Pairs<'de, Rule>,
 }
 
 impl<'de> Deserializer<'de> {
     pub fn from_str(input: &'de str) -> Self {
-        Deserializer { input }
+        let proc = ProcParser::parse(Rule::file, input).unwrap_or_else(|e| panic!("{}", e));
+        println!("{:?}", proc);
+        Deserializer { input: proc }
+    }
+}
+
+impl<'de> Deserializer<'de> {
+    fn parse_unsigned<T>(&self, val: &str) -> Result<T, DeError>
+    where
+        T: AddAssign<T> + MulAssign<T> + From<u8> + FromStr,
+    {
+        let mut len = 0;
+
+        for i in val.as_bytes() {
+            if i.is_ascii_digit() {
+                len = len + 1;
+            }
+        }
+
+        match (&val[0..len]).parse() {
+            Ok(v) => Ok(v),
+            Err(_) => Err(DeError::ExpectedInteger),
+        }
+    }
+
+    fn parse_bool(&self, val: &str) -> Result<bool, DeError> {
+        match val {
+            "yes" => Ok(true),
+            "no" => Ok(false),
+            _ => Err(DeError::InvalidBool),
+        }
     }
 }
 
@@ -35,13 +77,13 @@ where
 
     match T::deserialize(&mut deserializer) {
         Ok(t) => {
-            if deserializer.input.is_empty() {
+            if deserializer.input.len() == 0 {
                 Ok(t)
             } else {
                 Err(DeError::TrailingCharacters)
             }
         }
-        Err(_) => Err(DeError::Default),
+        Err(e) => Err(DeError::Default),
     }
 }
 
@@ -55,52 +97,6 @@ where
     match rdr.read_to_string(&mut data) {
         Ok(_) => from_str(&data),
         Err(_) => Err(DeError::Default),
-    }
-}
-
-// Parsing functions
-impl<'de> Deserializer<'de> {
-    fn peek_char(&self) -> Result<char, DeError> {
-        self.input.chars().next().ok_or(DeError::Eof)
-    }
-
-    fn peek_n_char(&self, n: usize) -> Result<char, DeError> {
-        self.input.chars().nth(n).ok_or(DeError::Eof)
-    }
-
-    fn next_char(&mut self) -> Result<char, DeError> {
-        let ch = self.peek_char()?;
-
-        self.input = &self.input[ch.len_utf8()..];
-
-        Ok(ch)
-    }
-
-    /// Parse a single string, only works for `values`
-    fn parse_string(&mut self) -> Result<&'de str, DeError> {
-        match self.input.find('\n') {
-            Some(len) => {
-                let s = &self.input[..len];
-                self.input = &self.input[len + 1..];
-                Ok(s)
-            }
-            None => Err(DeError::Eof),
-        }
-    }
-
-    fn parse_key(&mut self) -> Result<&'de str, DeError> {
-        if self.next_char()?.is_ascii_alphanumeric() {
-            return Err(DeError::ExpectedString);
-        }
-
-        match self.input.find([':', ' ', '\t']) {
-            Some(len) => {
-                let s = &self.input[..len];
-                self.input = &self.input[len + 1..];
-                Ok(s)
-            }
-            None => Err(DeError::Eof),
-        }
     }
 }
 
@@ -123,9 +119,14 @@ impl<'de, 'a> MapAccess<'de> for Format<'a, 'de> {
         K: DeserializeSeed<'de>,
     {
         // Check if there are no more entries.
-        if self.de.peek_n_char(0) == Ok('\n')
-            && self.de.peek_n_char(1).err().unwrap() == DeError::Eof
+        if self
+            .de
+            .input
+            .peek()
+            .is_some_and(|f| f.as_rule() == Rule::EOI)
         {
+            self.de.input.next();
+
             return Ok(None);
         }
 
@@ -137,14 +138,15 @@ impl<'de, 'a> MapAccess<'de> for Format<'a, 'de> {
     where
         V: DeserializeSeed<'de>,
     {
-        // It doesn't make a difference whether the colon is parsed at the end
-        // of `next_key_seed` or at the beginning of `next_value_seed`. In this
-        // case the code is a bit simpler having it here.
-        if self.de.next_char() != Ok(':') {
-            return Err(Error::custom("Separator not present"));
+        let res = self.de.input.next();
+
+        if res.is_some_and(|f| f.as_rule() != Rule::ass) {
+            Err(Error::custom("Missing separator."))
+        } else {
+            // Deserialize a map
+
+            seed.deserialize(&mut *self.de)
         }
-        // Deserialize a map value.
-        seed.deserialize(&mut *self.de)
     }
 }
 
@@ -156,14 +158,22 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        match self.input.peek().unwrap().as_rule() {
+            Rule::key => self.deserialize_string(visitor),
+            Rule::value => self.deserialize_string(visitor),
+            _ => unimplemented!(),
+        }
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        let string = self.input.next().unwrap().as_str();
+
+        let b = self.parse_bool(string);
+
+        visitor.visit_bool(b.unwrap())
     }
 
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -205,21 +215,33 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        let val = self.input.next().unwrap().as_str();
+
+        let num = self.parse_unsigned::<u16>(val);
+
+        visitor.visit_u16(num.unwrap())
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        let val = self.input.next().unwrap().as_str();
+
+        let num = self.parse_unsigned::<u32>(val);
+
+        visitor.visit_u32(num.unwrap())
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        let val = self.input.next().unwrap().as_str();
+
+        let num = self.parse_unsigned::<u64>(val);
+
+        visitor.visit_u64(num.unwrap())
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -247,14 +269,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        visitor.visit_borrowed_str(self.input.next().unwrap().as_str())
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        self.deserialize_str(visitor)
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -337,7 +359,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        // Parse the opening brace of the map.
+        // Give the visitor access to each entry of the map.
+        visitor.visit_map(Format::new(self))
+        // Parse the closing brace of the map.
     }
 
     fn deserialize_struct<V>(
@@ -349,7 +374,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        self.deserialize_map(visitor)
     }
 
     fn deserialize_enum<V>(
@@ -368,14 +393,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        self.deserialize_str(visitor)
     }
 
     fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        self.deserialize_any(visitor)
     }
 }
 
@@ -384,20 +409,20 @@ mod test {
 
     #[derive(Deserialize, Debug, PartialEq, Eq)]
     struct Example {
+        horse: bool,
         value1: u32,
         name: String,
     }
 
     #[test]
     fn test_deserialize() {
-        let meminfo = "
-            Value1:       32587776 kB
-            Name:         Test";
+        let meminfo = "value1:       15 kB\nname:         Test\nhorse : yes\n";
 
         let parsed = from_str::<Example>(meminfo).unwrap();
 
         let comp = Example {
-            value1: 32587776,
+            horse: true,
+            value1: 15,
             name: String::from("Test"),
         };
 

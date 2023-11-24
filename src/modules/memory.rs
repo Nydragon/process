@@ -70,3 +70,17 @@ impl Parser for Memory {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::fs;
+
+    use super::*;
+
+    #[test]
+    fn test_parse() {
+        let meminfo = fs::read_to_string("./mock/meminfo").unwrap();
+
+        from_str::<Memory>(&meminfo).unwrap();
+    }
+}

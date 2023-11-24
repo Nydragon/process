@@ -1,5 +1,3 @@
-use std::fs::File;
-
 use crate::{
     deserialize::from_str,
     parser::{DataError, Parser},
@@ -49,5 +47,19 @@ impl Parser for CPU {
         } else {
             return Err(DataError::FileNotFound);
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::fs;
+
+    use super::*;
+
+    #[test]
+    fn test_parse() {
+        let meminfo = fs::read_to_string("./mock/cpuinfo").unwrap();
+
+        from_str::<CPU>(&meminfo).unwrap();
     }
 }
