@@ -45,14 +45,12 @@ where
     }
 }
 
-pub fn from_reader<R, T>(rdr: R) -> Result<T, DeError>
+pub fn from_reader<R, T>(mut rdr: R) -> Result<T, DeError>
 where
     R: std::io::Read,
     T: DeserializeOwned,
 {
     let mut data = String::new();
-
-    let mut rdr = R::from(rdr);
 
     match rdr.read_to_string(&mut data) {
         Ok(_) => from_str(&data),

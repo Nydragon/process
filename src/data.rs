@@ -20,6 +20,12 @@ impl Data {
     }
 }
 
+impl Default for Data {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
