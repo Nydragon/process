@@ -1,6 +1,9 @@
+use crate::{
+    deserialize::from_reader,
+    parser::{DataError, Parser},
+};
 use serde::{Deserialize, Serialize};
-
-use crate::parser::Parser;
+use std::fs::File;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Memory {
@@ -30,7 +33,12 @@ pub struct Memory {
 }
 
 impl Parser for Memory {
-    fn parse() -> Option<Memory> {
-        None
+    fn parse() -> Result<Memory, DataError> {
+        let fd = File::open("/proc/meminfo").unwrap();
+
+        match from_reader(fd) {
+            Ok(data) => Ok(data),
+            Err(_) => Err(DataError::Parsing),
+        }
     }
 }

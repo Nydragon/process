@@ -14,8 +14,8 @@ impl Data {
     pub fn new() -> Data {
         Data {
             timestamp: timestamp!(),
-            cpu: CPU::parse(),
-            memory: Memory::parse(),
+            cpu: CPU::parse().ok(),
+            memory: Memory::parse().ok(),
         }
     }
 }

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::parser::Parser;
+use crate::parser::{DataError, Parser};
 
 pub type Processes = Vec<Process>;
 
@@ -10,7 +10,7 @@ pub struct Process {}
 
 /// Implementing Parser for [Processes] instead of [Process].
 impl Parser for Processes {
-    fn parse() -> Option<Processes> {
-        Some(vec![])
+    fn parse() -> Result<Processes, DataError> {
+        unimplemented!()
     }
 }

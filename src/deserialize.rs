@@ -1,7 +1,6 @@
 use serde::de::{self, DeserializeOwned, DeserializeSeed, Error, MapAccess};
 use serde::Deserialize;
 use std::fmt::Display;
-use std::fs;
 
 #[derive(Debug, PartialEq)]
 pub enum DeError {
@@ -46,15 +45,19 @@ where
     }
 }
 
-pub fn from_reader<T>(filename: &str) -> Result<T, DeError>
+pub fn from_reader<R, T>(rdr: R) -> Result<T, DeError>
 where
+    R: std::io::Read,
     T: DeserializeOwned,
 {
-    let content: Vec<u8> = fs::read(filename).unwrap();
+    let mut data = String::new();
 
-    let string = String::from_utf8(content).unwrap();
+    let mut rdr = R::from(rdr);
 
-    from_str(&string)
+    match rdr.read_to_string(&mut data) {
+        Ok(_) => from_str(&data),
+        Err(_) => Err(DeError::Default),
+    }
 }
 
 // Parsing functions
