@@ -66,7 +66,7 @@ impl Parser for Memory {
                 Err(_) => Err(DataError::Parsing),
             }
         } else {
-            return Err(DataError::FileNotFound);
+            Err(DataError::FileNotFound)
         }
     }
 }

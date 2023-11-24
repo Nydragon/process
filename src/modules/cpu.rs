@@ -59,7 +59,7 @@ impl Parser for CPUs {
                 Err(_) => Err(DataError::Parsing),
             }
         } else {
-            return Err(DataError::FileNotFound);
+            Err(DataError::FileNotFound)
         }
     }
 }
