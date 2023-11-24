@@ -1,9 +1,8 @@
 use crate::{
-    deserialize::from_reader,
+    deserialize::from_str,
     parser::{DataError, Parser},
 };
 use serde::{Deserialize, Serialize};
-use std::fs::File;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -38,11 +37,15 @@ pub struct CPU {
 
 impl Parser for CPU {
     fn parse() -> Result<CPU, DataError> {
-        let fd = File::open("/proc/cpuinfo").unwrap();
+        let file = std::fs::read_to_string("/proc/cpuinfo");
 
-        match from_reader(fd) {
-            Ok(data) => Ok(data),
-            Err(_) => Err(DataError::Parsing),
+        if let Ok(content) = file {
+            match from_str(&content) {
+                Ok(data) => Ok(data),
+                Err(_) => Err(DataError::Parsing),
+            }
+        } else {
+            return Err(DataError::FileNotFound);
         }
     }
 }

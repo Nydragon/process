@@ -1,9 +1,8 @@
 use crate::{
-    deserialize::from_reader,
+    deserialize::from_str,
     parser::{DataError, Parser},
 };
 use serde::{Deserialize, Serialize};
-use std::fs::File;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Memory {
@@ -34,11 +33,15 @@ pub struct Memory {
 
 impl Parser for Memory {
     fn parse() -> Result<Memory, DataError> {
-        let fd = File::open("/proc/meminfo").unwrap();
+        let file = std::fs::read_to_string("/proc/meminfo");
 
-        match from_reader(fd) {
-            Ok(data) => Ok(data),
-            Err(_) => Err(DataError::Parsing),
+        if let Ok(content) = file {
+            match from_str(&content) {
+                Ok(data) => Ok(data),
+                Err(_) => Err(DataError::Parsing),
+            }
+        } else {
+            return Err(DataError::FileNotFound);
         }
     }
 }

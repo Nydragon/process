@@ -1,5 +1,6 @@
 pub enum DataError {
     Parsing,
+    FileNotFound,
 }
 
 pub trait Parser {
