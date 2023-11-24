@@ -2,7 +2,7 @@ use core::panic;
 use pest::iterators::Pairs;
 use pest::Parser;
 use pest_derive::Parser;
-use serde::de::{self, DeserializeOwned, DeserializeSeed, Error, MapAccess, SeqAccess};
+use serde::de::{self, DeserializeSeed, Error, MapAccess, SeqAccess};
 use serde::Deserialize;
 use std::fmt::Display;
 use std::ops::{AddAssign, MulAssign};
@@ -12,12 +12,13 @@ use std::str::FromStr;
 #[grammar = "proc.pest"]
 struct ProcParser;
 
+/// Different types of errors used by the Deserializer
 #[derive(Debug, PartialEq)]
 pub enum DeError {
     TrailingCharacters,
-    Default,
     ExpectedInteger,
     InvalidBool,
+    Serde(serde::de::value::Error),
 }
 
 impl Display for DeError {
@@ -27,17 +28,19 @@ impl Display for DeError {
 }
 
 pub struct Deserializer<'de> {
-    input: Pairs<'de, Rule>,
+    input: Vec<Pairs<'de, Rule>>,
 }
 
+/// Deserializing entry methods
 impl<'de> Deserializer<'de> {
     pub fn from_str(input: &'de str) -> Self {
         let proc = ProcParser::parse(Rule::file, input).unwrap_or_else(|e| panic!("{}", e));
-        // println!("{:#?}", proc);
-        Deserializer { input: proc }
+
+        Deserializer { input: vec![proc] }
     }
 }
 
+/// Different parsing implementations and conversions.
 impl<'de> Deserializer<'de> {
     fn parse_unsigned<T>(&self, val: &str) -> Result<T, DeError>
     where
@@ -74,29 +77,13 @@ where
 
     match T::deserialize(&mut deserializer) {
         Ok(t) => {
-            if deserializer.input.len() == 0 {
+            if deserializer.input.is_empty() {
                 Ok(t)
             } else {
                 Err(DeError::TrailingCharacters)
             }
         }
-        Err(e) => {
-            println!("{}", e);
-            Err(DeError::Default)
-        }
-    }
-}
-
-pub fn from_reader<R, T>(mut rdr: R) -> Result<T, DeError>
-where
-    R: std::io::Read,
-    T: DeserializeOwned,
-{
-    let mut data = String::new();
-
-    match rdr.read_to_string(&mut data) {
-        Ok(_) => from_str(&data),
-        Err(_) => Err(DeError::Default),
+        Err(e) => Err(DeError::Serde(e)),
     }
 }
 
@@ -111,6 +98,24 @@ impl<'a, 'de> Format<'a, 'de> {
     }
 }
 
+/// Implementation of [serde::de::SeqAccess], allows the [serde::de::Visitor] to traverse a sequence.
+impl<'de, 'a> SeqAccess<'de> for Format<'a, 'de> {
+    type Error = serde::de::value::Error;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        if self.de.input.is_empty() {
+            return Ok(None);
+        }
+
+        // Deserialize an array element.
+        seed.deserialize(&mut *self.de).map(Some)
+    }
+}
+
+/// Implementation of [serde::de::MapAccess], allows the [serde::de::Visitor] to traverse a map.
 impl<'de, 'a> MapAccess<'de> for Format<'a, 'de> {
     type Error = serde::de::value::Error;
 
@@ -119,11 +124,10 @@ impl<'de, 'a> MapAccess<'de> for Format<'a, 'de> {
         K: DeserializeSeed<'de>,
     {
         // Check if there are no more entries.
-        if self.de.input.len() == 0 {
+        if self.de.input.last().unwrap().len() == 0 {
+            self.de.input.pop();
             return Ok(None);
         }
-
-        // println!("{}", self.de.input);
 
         // Deserialize a map key.
         seed.deserialize(&mut *self.de).map(Some)
@@ -133,12 +137,12 @@ impl<'de, 'a> MapAccess<'de> for Format<'a, 'de> {
     where
         V: DeserializeSeed<'de>,
     {
-        let res = self.de.input.next();
+        let res = self.de.input.last_mut().unwrap().next();
+
         if res.is_some_and(|f| f.as_rule() != Rule::ass) {
             Err(Error::custom("Missing separator."))
         } else {
-            // Deserialize a map
-
+            // Deserialize a map value
             seed.deserialize(&mut *self.de)
         }
     }
@@ -152,7 +156,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        match self.input.peek().unwrap().as_rule() {
+        match self.input.last().unwrap().peek().unwrap().as_rule() {
             Rule::section => self.deserialize_map(visitor),
             Rule::key => self.deserialize_string(visitor),
             Rule::value => self.deserialize_string(visitor),
@@ -164,7 +168,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        let string = self.input.next().unwrap().as_str();
+        let string = self.input.last_mut().unwrap().next().unwrap().as_str();
 
         let b = self.parse_bool(string);
 
@@ -210,7 +214,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        let val = self.input.next().unwrap().as_str();
+        let val = self.input.last_mut().unwrap().next().unwrap().as_str();
 
         let num = self.parse_unsigned::<u16>(val);
 
@@ -221,7 +225,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        let val = self.input.next().unwrap().as_str();
+        let val = self.input.last_mut().unwrap().next().unwrap().as_str();
 
         let num = self.parse_unsigned::<u32>(val);
 
@@ -232,7 +236,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        let val = self.input.next().unwrap().as_str();
+        let val = self.input.last_mut().unwrap().next().unwrap().as_str();
 
         let num = self.parse_unsigned::<u64>(val);
 
@@ -264,7 +268,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        visitor.visit_borrowed_str(self.input.next().unwrap().as_str())
+        visitor.visit_borrowed_str(self.input.last_mut().unwrap().next().unwrap().as_str())
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -328,7 +332,13 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        todo!()
+        let elem = self.input.last_mut().unwrap().next().unwrap();
+
+        self.input.push(elem.into_inner());
+        let res = visitor.visit_seq(Format::new(self));
+
+        self.input.pop();
+        res
     }
 
     fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error>
