@@ -402,6 +402,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 
@@ -412,8 +413,10 @@ mod test {
         name: String,
     }
 
+    type ExampleV = Vec<Example>;
+
     #[test]
-    fn test_deserialize() {
+    fn test_simple_deserialize() {
         let meminfo = "value1:       15 kB\nname:         Test\nhorse : yes\n";
 
         let parsed = from_str::<Example>(meminfo).unwrap();
@@ -423,6 +426,43 @@ mod test {
             value1: 15,
             name: String::from("Test"),
         };
+
+        assert_eq!(parsed, comp)
+    }
+
+    #[test]
+    fn test_array_single_elem_deserialize() {
+        let meminfo = "value1:       15 kB\nname:         Test\nhorse : yes\n";
+
+        let parsed = from_str::<ExampleV>(meminfo).unwrap();
+
+        let comp = [Example {
+            horse: true,
+            value1: 15,
+            name: String::from("Test"),
+        }];
+
+        assert_eq!(parsed, comp)
+    }
+
+    #[test]
+    fn test_array_multiple_elem_deserialize() {
+        let meminfo = "value1:       15 kB\nname:         Test\nhorse : yes\n\nvalue1:       432 kB\nname:         Validation\nhorse : no\n";
+
+        let parsed = from_str::<ExampleV>(meminfo).unwrap();
+
+        let comp = [
+            Example {
+                horse: true,
+                value1: 15,
+                name: String::from("Test"),
+            },
+            Example {
+                horse: false,
+                value1: 432,
+                name: String::from("Validation"),
+            },
+        ];
 
         assert_eq!(parsed, comp)
     }
