@@ -1,3 +1,5 @@
+use std::fs::File;
+
 use crate::{
     deserialize::from_str,
     parser::{DataError, Parser},

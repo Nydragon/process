@@ -2,6 +2,7 @@ use super::{modules::cpu::CPU, modules::memory::Memory};
 use crate::{parser::Parser, timestamp};
 use serde::{Deserialize, Serialize};
 
+/// Holds all the system information
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Data {
