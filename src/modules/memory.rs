@@ -4,6 +4,11 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
+#[cfg(test)]
+const MEMINFO: &str = "./mock/meminfo";
+#[cfg(not(test))]
+const MEMINFO: &str = "/proc/meminfo";
+
 /// Rust representation of the contents of `/proc/meminfo``
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Memory {
@@ -58,7 +63,7 @@ pub struct Memory {
 
 impl Parser for Memory {
     fn parse() -> Result<Memory, DataError> {
-        let file = std::fs::read_to_string("/proc/meminfo");
+        let file = std::fs::read_to_string(MEMINFO);
 
         if let Ok(content) = file {
             match from_str(&content) {
@@ -73,14 +78,10 @@ impl Parser for Memory {
 
 #[cfg(test)]
 mod test {
-    use std::fs;
-
     use super::*;
 
     #[test]
     fn test_parse() {
-        let meminfo = fs::read_to_string("./mock/meminfo").unwrap();
-
-        from_str::<Memory>(&meminfo).unwrap();
+        Memory::parse().unwrap();
     }
 }

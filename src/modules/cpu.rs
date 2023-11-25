@@ -4,8 +4,12 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
+#[cfg(not(test))]
+const CPUINFO: &str = "/proc/cpuinfo";
+#[cfg(test)]
+const CPUINFO: &str = "./mock/cpuinfo";
+
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct CPU {
     processor: u16,
     vendor_id: String,
@@ -49,31 +53,31 @@ pub struct CPU {
 
 pub type CPUs = Vec<CPU>;
 
+impl CPU {
+    fn parse_sec(e: &str) -> CPU {
+        let mut e = String::from(e);
+        if !e.ends_with('\n') {
+            e.push('\n');
+        }
+
+        from_str::<CPU>(&e).unwrap()
+    }
+}
+
 impl Parser for CPUs {
     fn parse() -> Result<CPUs, DataError> {
-        let file = std::fs::read_to_string("/proc/cpuinfo");
+        let file = std::fs::read_to_string(CPUINFO).unwrap();
 
-        if let Ok(content) = file {
-            match from_str(&content) {
-                Ok(data) => Ok(data),
-                Err(_) => Err(DataError::Parsing),
-            }
-        } else {
-            Err(DataError::FileNotFound)
-        }
+        Ok(file.split("\n\n").map(CPU::parse_sec).collect())
     }
 }
 
 #[cfg(test)]
 mod test {
-    use std::fs;
-
     use super::*;
 
     #[test]
     fn test_parse() {
-        let meminfo = fs::read_to_string("./mock/cpuinfo").unwrap();
-
-        from_str::<CPU>(&meminfo).unwrap();
+        CPUs::parse().unwrap();
     }
 }
