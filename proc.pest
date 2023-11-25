@@ -1,9 +1,12 @@
 
 WHITESPACE = _{ " " | "\t" }
-key = { (ASCII_ALPHANUMERIC | "(" | ")" | "_")+ }
+key = { (ASCII_ALPHANUMERIC | "(" | ")" | "_" | " " )+ }
 ass = { ":" }
-value = { (ASCII_ALPHANUMERIC | WHITESPACE)+ }
+value = { (ASCII_ALPHANUMERIC | WHITESPACE | "(" | ")" | "_" | " " | "@" | "." | "," | "-")* }
 
+// A single entry, matches "key : value\n"
 row = _{ key ~ WHITESPACE* ~ ass ~ WHITESPACE* ~ value ~ NEWLINE }
 
-file = _{ row+ ~ EOI  }
+section = { row+ }
+
+file = _{ row+ ~ EOI }

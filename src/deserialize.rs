@@ -14,18 +14,24 @@ struct ProcParser;
 
 #[derive(Debug, PartialEq)]
 pub enum DeError {
-    Eof,
     TrailingCharacters,
-    ExpectedMapColon,
-    ExpectedString,
-    Default,
     ExpectedInteger,
+    Generic,
     InvalidBool,
+    SerdeError(serde::de::value::Error),
 }
 
 impl Display for DeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let word = match *self {
+            DeError::TrailingCharacters => "Didn't parse the entirety of the input",
+            DeError::ExpectedInteger => "Expected an integer.",
+            DeError::Generic => "Generic Error",
+            DeError::InvalidBool => "Value is not a bool.",
+            DeError::SerdeError(_) => todo!(),
+        };
+
+        write!(f, "{}", word)
     }
 }
 
@@ -34,9 +40,9 @@ pub struct Deserializer<'de> {
 }
 
 impl<'de> Deserializer<'de> {
-    pub fn from_str(input: &'de str) -> Self {
+    pub fn from_string(input: &'de str) -> Self {
         let proc = ProcParser::parse(Rule::file, input).unwrap_or_else(|e| panic!("{}", e));
-        println!("{:?}", proc);
+
         Deserializer { input: proc }
     }
 }
@@ -50,11 +56,11 @@ impl<'de> Deserializer<'de> {
 
         for i in val.as_bytes() {
             if i.is_ascii_digit() {
-                len = len + 1;
+                len += 1;
             }
         }
 
-        match (&val[0..len]).parse() {
+        match val[0..len].parse() {
             Ok(v) => Ok(v),
             Err(_) => Err(DeError::ExpectedInteger),
         }
@@ -73,7 +79,7 @@ pub fn from_str<'a, T: Deserialize<'a>>(s: &'a str) -> Result<T, DeError>
 where
     T: Deserialize<'a>,
 {
-    let mut deserializer = Deserializer::from_str(s);
+    let mut deserializer = Deserializer::from_string(s);
 
     match T::deserialize(&mut deserializer) {
         Ok(t) => {
@@ -83,7 +89,10 @@ where
                 Err(DeError::TrailingCharacters)
             }
         }
-        Err(e) => Err(DeError::Default),
+        Err(e) => {
+            println!("{}", e);
+            Err(DeError::SerdeError(e))
+        }
     }
 }
 
@@ -96,7 +105,7 @@ where
 
     match rdr.read_to_string(&mut data) {
         Ok(_) => from_str(&data),
-        Err(_) => Err(DeError::Default),
+        Err(_) => Err(DeError::Generic),
     }
 }
 
@@ -176,35 +185,35 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_bool(b.unwrap())
     }
 
-    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_i8<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_i16<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_i32<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_i64<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_u8<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
@@ -244,21 +253,21 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_u64(num.unwrap())
     }
 
-    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_f32<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_f64<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_char<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
@@ -279,28 +288,28 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         self.deserialize_str(visitor)
     }
 
-    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
@@ -309,8 +318,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
     fn deserialize_unit_struct<V>(
         self,
-        name: &'static str,
-        visitor: V,
+        _name: &'static str,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
@@ -320,8 +329,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
     fn deserialize_newtype_struct<V>(
         self,
-        name: &'static str,
-        visitor: V,
+        _name: &'static str,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
@@ -329,14 +338,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         todo!()
     }
 
-    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
@@ -345,9 +354,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
     fn deserialize_tuple_struct<V>(
         self,
-        name: &'static str,
-        len: usize,
-        visitor: V,
+        _name: &'static str,
+        _len: usize,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
@@ -367,8 +376,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
     fn deserialize_struct<V>(
         self,
-        name: &'static str,
-        fields: &'static [&'static str],
+        _name: &'static str,
+        _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
@@ -379,9 +388,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
     fn deserialize_enum<V>(
         self,
-        name: &'static str,
-        variants: &'static [&'static str],
-        visitor: V,
+        _name: &'static str,
+        _variants: &'static [&'static str],
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
