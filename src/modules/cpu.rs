@@ -68,7 +68,9 @@ impl Parser for CPUs {
     fn parse() -> Result<CPUs, DataError> {
         let file = std::fs::read_to_string(CPUINFO).unwrap();
 
-        Ok(file.split("\n\n").map(CPU::parse_sec).collect())
+        let sections = file.split_inclusive("\n\n");
+
+        Ok(file.split_inclusive("\n\n").map(CPU::parse_sec).collect())
     }
 }
 

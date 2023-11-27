@@ -5,7 +5,7 @@ ass = { ":" }
 value = { (ASCII_ALPHANUMERIC | WHITESPACE | "(" | ")" | "_" | " " | "@" | "." | "," | "-")* }
 
 // A single entry, matches "key : value\n"
-row = _{ key ~ WHITESPACE* ~ ass ~ WHITESPACE* ~ value ~ NEWLINE }
+row = _{ key ~ WHITESPACE* ~ ass ~ WHITESPACE* ~ value ~ NEWLINE{,2} }
 
 section = { row+ }
 
