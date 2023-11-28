@@ -2,7 +2,7 @@
 WHITESPACE = _{ " " | "\t" }
 key = { (ASCII_ALPHANUMERIC | "(" | ")" | "_" | " " )+ }
 ass = { ":" }
-value = { (ASCII_ALPHANUMERIC | WHITESPACE | "(" | ")" | "_" | " " | "@" | "." | "," | "-")* }
+value = { (ASCII_ALPHANUMERIC | WHITESPACE | "(" | ")" | "_" | " " | "@" | "." | "," | "-" | "/" | ":")* }
 
 // A single entry, matches "key : value\n"
 row = _{ key ~ WHITESPACE* ~ ass ~ WHITESPACE* ~ value ~ NEWLINE{1,2} }

@@ -1,0 +1,14 @@
+WHITESPACE_C = _{ " " | "\t" }
+str = { (ASCII_ALPHANUMERIC | WHITESPACE_C | "_" | "@" | "." | "," | "-" | "/" | ":" )* }
+
+str_par = _{ "(" ~ str ~ ")"}
+str_quot =  _{ "\"" ~ str ~ "\""}
+
+num = @{ "-"? ~ '0'..'9'+ }
+
+
+str_lock = _{ str_par | str_quot | str }
+
+val = _{ num | str_lock }
+
+line  = _{ val ~ (" " ~ val)+ ~ "\n" ~ EOI }
