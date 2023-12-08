@@ -1,0 +1,12 @@
+WHITESPACE = _{ " " | "\t" }
+str = { (!("(" | ")" | "\"") ~ ANY)+ }
+
+wrapped_str = _{ ("("+ | "\"")? ~ str ~ (")"+| "\"")?}
+
+state = { "R" | "S" | "D" | "Z" | "T" | "t" | "W" | "X" | "x" | "K" | "P" | "I" }
+
+
+num = @{ "-"? ~ '0'..'9'+ }
+
+
+line  = _{ num ~ wrapped_str ~ state ~ num+ ~ "\n"? ~ EOI }

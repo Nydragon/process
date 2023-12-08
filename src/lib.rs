@@ -5,4 +5,4 @@ mod helper;
 /// Data structures for different pieces of hardware (CPU, Memory, etc.)
 pub mod modules;
 pub mod parser;
-mod process;
+pub mod process;
