@@ -41,7 +41,8 @@ pub struct Deserializer<'de> {
 
 impl<'de> Deserializer<'de> {
     pub fn from_string(input: &'de str) -> Self {
-        let proc = ProcParser::parse(Rule::file, input).unwrap_or_else(|e| panic!("{}", e));
+        let proc = ProcParser::parse(Rule::file, input)
+            .unwrap_or_else(|e| panic!("Error while parsing:\n{}", e));
 
         Deserializer { input: proc }
     }
