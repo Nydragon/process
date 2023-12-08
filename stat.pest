@@ -1,14 +1,12 @@
-WHITESPACE_C = _{ " " | "\t" }
-str = { (ASCII_ALPHANUMERIC | WHITESPACE_C | "_" | "@" | "." | "," | "-" | "/" | ":" )* }
+WHITESPACE = _{ " " | "\t" }
+str = { (!("(" | ")" | "\"") ~ ANY)+ }
 
-str_par = _{ "(" ~ str ~ ")"}
-str_quot =  _{ "\"" ~ str ~ "\""}
+wrapped_str = _{ ("("+ | "\"")? ~ str ~ (")"+| "\"")?}
+
+state = { "R" | "S" | "D" | "Z" | "T" | "t" | "W" | "X" | "x" | "K" | "P" | "I" }
+
 
 num = @{ "-"? ~ '0'..'9'+ }
 
 
-str_lock = _{ str_par | str_quot | str }
-
-val = _{ num | str_lock }
-
-line  = _{ val ~ (" " ~ val)+ ~ "\n" ~ EOI }
+line  = _{ num ~ wrapped_str ~ state ~ num+ ~ "\n"? ~ EOI }
