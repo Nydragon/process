@@ -17,5 +17,6 @@ allowed_types = [
     "perf",
     "test",
     "wip",
+    "ci",
 ]
 merge_commit = true
