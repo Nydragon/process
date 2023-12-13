@@ -1,7 +1,4 @@
-use crate::{
-    deserialize::from_str,
-    parser::{DataError, Parser as PParser},
-};
+use crate::parser::{DataError, Parser as PParser};
 use pest::Parser;
 use serde::{Deserialize, Serialize};
 use std::{fs, str::FromStr};
@@ -34,7 +31,7 @@ impl FromStr for State {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.chars().nth(0).unwrap() {
+        match s.chars().next().unwrap() {
             'S' => Ok(State::S),
             'I' => Ok(State::I),
             'R' => Ok(State::R),
@@ -130,58 +127,58 @@ impl Process {
         let mut stats = StatParser::parse(Rule::line, stat).expect("Hello");
         println!("{} {}", stat, stats.len());
         Ok(Process {
-            pid: stats.next().unwrap().as_str().parse().unwrap(),
-            command: stats.next().unwrap().as_str().parse().unwrap(),
-            state: State::from_str(stats.next().unwrap().as_str()).unwrap(),
-            ppid: stats.next().unwrap().as_str().parse().unwrap(),
-            pgrp: stats.next().unwrap().as_str().parse().unwrap(),
-            session: stats.next().unwrap().as_str().parse().unwrap(),
-            tty_nr: stats.next().unwrap().as_str().parse().unwrap(),
-            tpgid: stats.next().unwrap().as_str().parse().unwrap(),
-            flags: stats.next().unwrap().as_str().parse().unwrap(),
-            minflit: stats.next().unwrap().as_str().parse().unwrap(),
-            cminflit: stats.next().unwrap().as_str().parse().unwrap(),
-            majflt: stats.next().unwrap().as_str().parse().unwrap(),
-            cmajflt: stats.next().unwrap().as_str().parse().unwrap(),
-            utime: stats.next().unwrap().as_str().parse().unwrap(),
-            stime: stats.next().unwrap().as_str().parse().unwrap(),
-            cutime: stats.next().unwrap().as_str().parse().unwrap(),
-            cstime: stats.next().unwrap().as_str().parse().unwrap(),
-            priority: stats.next().unwrap().as_str().parse().unwrap(),
-            nice: stats.next().unwrap().as_str().parse().unwrap(),
-            num_threads: stats.next().unwrap().as_str().parse().unwrap(),
-            itrealvalue: stats.next().unwrap().as_str().parse().unwrap(),
-            starttime: stats.next().unwrap().as_str().parse().unwrap(),
-            vsize: stats.next().unwrap().as_str().parse().unwrap(),
-            rss: stats.next().unwrap().as_str().parse().unwrap(),
-            rsslim: stats.next().unwrap().as_str().parse().unwrap(),
-            startcode: stats.next().unwrap().as_str().parse().unwrap(),
-            encode: stats.next().unwrap().as_str().parse().unwrap(),
-            startstack: stats.next().unwrap().as_str().parse().unwrap(),
-            kstkep: stats.next().unwrap().as_str().parse().unwrap(),
-            kstkeip: stats.next().unwrap().as_str().parse().unwrap(),
-            signal: stats.next().unwrap().as_str().parse().unwrap(),
-            blocked: stats.next().unwrap().as_str().parse().unwrap(),
-            sigignore: stats.next().unwrap().as_str().parse().unwrap(),
-            sigcatch: stats.next().unwrap().as_str().parse().unwrap(),
-            wchan: stats.next().unwrap().as_str().parse().unwrap(),
-            nswap: stats.next().unwrap().as_str().parse().unwrap(),
-            cnswap: stats.next().unwrap().as_str().parse().unwrap(),
-            exit_signal: stats.next().unwrap().as_str().parse().unwrap(),
-            processor: stats.next().unwrap().as_str().parse().unwrap(),
-            rt_priotiy: stats.next().unwrap().as_str().parse().unwrap(),
-            policy: stats.next().unwrap().as_str().parse().unwrap(),
-            delayacct_blkio_ticks: stats.next().unwrap().as_str().parse().unwrap(),
-            guest_time: stats.next().unwrap().as_str().parse().unwrap(),
-            cguest_time: stats.next().unwrap().as_str().parse().unwrap(),
-            start_data: stats.next().unwrap().as_str().parse().unwrap(),
-            end_data: stats.next().unwrap().as_str().parse().unwrap(),
-            start_brk: stats.next().unwrap().as_str().parse().unwrap(),
-            arg_start: stats.next().unwrap().as_str().parse().unwrap(),
-            arg_end: stats.next().unwrap().as_str().parse().unwrap(),
-            env_start: stats.next().unwrap().as_str().parse().unwrap(),
-            env_end: stats.next().unwrap().as_str().parse().unwrap(),
-            exit: stats.next().unwrap().as_str().parse().unwrap(),
+            pid: stats.next().unwrap().as_str().parse()?,
+            command: stats.next().unwrap().as_str().parse()?,
+            state: State::from_str(stats.next().unwrap().as_str())?,
+            ppid: stats.next().unwrap().as_str().parse()?,
+            pgrp: stats.next().unwrap().as_str().parse()?,
+            session: stats.next().unwrap().as_str().parse()?,
+            tty_nr: stats.next().unwrap().as_str().parse()?,
+            tpgid: stats.next().unwrap().as_str().parse()?,
+            flags: stats.next().unwrap().as_str().parse()?,
+            minflit: stats.next().unwrap().as_str().parse()?,
+            cminflit: stats.next().unwrap().as_str().parse()?,
+            majflt: stats.next().unwrap().as_str().parse()?,
+            cmajflt: stats.next().unwrap().as_str().parse()?,
+            utime: stats.next().unwrap().as_str().parse()?,
+            stime: stats.next().unwrap().as_str().parse()?,
+            cutime: stats.next().unwrap().as_str().parse()?,
+            cstime: stats.next().unwrap().as_str().parse()?,
+            priority: stats.next().unwrap().as_str().parse()?,
+            nice: stats.next().unwrap().as_str().parse()?,
+            num_threads: stats.next().unwrap().as_str().parse()?,
+            itrealvalue: stats.next().unwrap().as_str().parse()?,
+            starttime: stats.next().unwrap().as_str().parse()?,
+            vsize: stats.next().unwrap().as_str().parse()?,
+            rss: stats.next().unwrap().as_str().parse()?,
+            rsslim: stats.next().unwrap().as_str().parse()?,
+            startcode: stats.next().unwrap().as_str().parse()?,
+            encode: stats.next().unwrap().as_str().parse()?,
+            startstack: stats.next().unwrap().as_str().parse()?,
+            kstkep: stats.next().unwrap().as_str().parse()?,
+            kstkeip: stats.next().unwrap().as_str().parse()?,
+            signal: stats.next().unwrap().as_str().parse()?,
+            blocked: stats.next().unwrap().as_str().parse()?,
+            sigignore: stats.next().unwrap().as_str().parse()?,
+            sigcatch: stats.next().unwrap().as_str().parse()?,
+            wchan: stats.next().unwrap().as_str().parse()?,
+            nswap: stats.next().unwrap().as_str().parse()?,
+            cnswap: stats.next().unwrap().as_str().parse()?,
+            exit_signal: stats.next().unwrap().as_str().parse()?,
+            processor: stats.next().unwrap().as_str().parse()?,
+            rt_priotiy: stats.next().unwrap().as_str().parse()?,
+            policy: stats.next().unwrap().as_str().parse()?,
+            delayacct_blkio_ticks: stats.next().unwrap().as_str().parse()?,
+            guest_time: stats.next().unwrap().as_str().parse()?,
+            cguest_time: stats.next().unwrap().as_str().parse()?,
+            start_data: stats.next().unwrap().as_str().parse()?,
+            end_data: stats.next().unwrap().as_str().parse()?,
+            start_brk: stats.next().unwrap().as_str().parse()?,
+            arg_start: stats.next().unwrap().as_str().parse()?,
+            arg_end: stats.next().unwrap().as_str().parse()?,
+            env_start: stats.next().unwrap().as_str().parse()?,
+            env_end: stats.next().unwrap().as_str().parse()?,
+            exit: stats.next().unwrap().as_str().parse()?,
         })
     }
 }
@@ -201,7 +198,7 @@ impl PParser for Processes {
                     .to_str()
                     .unwrap()
                     .chars()
-                    .all(|c| c.is_digit(10));
+                    .all(|c| c.is_ascii_digit());
 
                 if x {
                     let str = &fs::read_to_string(entry.path().join("stat")).expect("msg");
