@@ -1,5 +1,9 @@
 use super::{modules::cpu::CPUs, modules::memory::Memory};
-use crate::{parser::Parser, process::Processes, timestamp};
+use crate::{
+    modules::{misc::Misc, process::Processes},
+    parser::Parser,
+    timestamp,
+};
 use serde::{Deserialize, Serialize};
 
 /// Holds all the system information
@@ -10,6 +14,7 @@ pub struct Data {
     pub cpu: Option<CPUs>,
     pub memory: Option<Memory>,
     pub processes: Option<Processes>,
+    pub misc: Option<Misc>,
 }
 
 impl Data {
@@ -19,6 +24,7 @@ impl Data {
             cpu: CPUs::parse().ok(),
             memory: Memory::parse().ok(),
             processes: Processes::parse().ok(),
+            misc: Misc::parse().ok(),
         }
     }
 }
