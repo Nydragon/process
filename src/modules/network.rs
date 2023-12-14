@@ -42,7 +42,7 @@ impl Parser for Network {
             })
         });
 
-        todo!()
+        Ok(Network { devices: hash })
     }
 }
 
