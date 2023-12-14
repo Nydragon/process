@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Data {
-    pub timestamp: u64,
+    pub timestamp: u128,
     pub cpu: Option<CPUs>,
     pub memory: Option<Memory>,
     pub processes: Option<Processes>,
