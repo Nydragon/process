@@ -29,7 +29,7 @@ impl Parser for Network {
         let mut hash: HashMap<String, NetworkDevice> = HashMap::new();
 
         fs::read_dir(DEVICE_DIR).ok().map(|dir| {
-            dir.map(|dir| {
+            dir.for_each(|dir| {
                 let dir = dir.unwrap();
                 let x = dir.file_name().to_str().map(|s| s.to_string());
                 let data = NetworkDevice::parse(dir);
@@ -38,7 +38,7 @@ impl Parser for Network {
                     hash.insert(x, data)
                 } else {
                     None
-                }
+                };
             })
         });
 
@@ -69,6 +69,13 @@ impl NetworkDevice {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_network_parse() {
+        let res = Network::parse().unwrap();
+
+        assert_eq!(res.devices.len(), 1);
+    }
 
     #[test]
     fn test_network_device_parse() {
