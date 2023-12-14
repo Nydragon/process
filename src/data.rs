@@ -1,6 +1,6 @@
 use super::{modules::cpu::CPUs, modules::memory::Memory};
 use crate::{
-    modules::{misc::Misc, process::Processes},
+    modules::{misc::Misc, network::Network, process::Processes},
     parser::Parser,
     timestamp,
 };
@@ -15,6 +15,7 @@ pub struct Data {
     pub memory: Option<Memory>,
     pub processes: Option<Processes>,
     pub misc: Option<Misc>,
+    pub network: Option<Network>,
 }
 
 impl Data {
@@ -25,6 +26,7 @@ impl Data {
             memory: Memory::parse().ok(),
             processes: Processes::parse().ok(),
             misc: Misc::parse().ok(),
+            network: Network::parse().ok(),
         }
     }
 }
