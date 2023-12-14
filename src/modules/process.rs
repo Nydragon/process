@@ -1,7 +1,7 @@
 use crate::parser::{DataError, Parser as PParser};
 use pest::Parser;
 use serde::{Deserialize, Serialize};
-use std::{fs, str::FromStr};
+use std::{fs, os::unix::fs::MetadataExt, str::FromStr};
 
 pub type Processes = Vec<Process>;
 
@@ -46,6 +46,7 @@ impl FromStr for State {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Process {
+    user_name: Option<String>,
     /// The process ID.
     pid: u32,
     /// The filename of the executable, in parentheses.
@@ -123,10 +124,11 @@ pub struct Process {
 }
 
 impl Process {
-    fn new(stat: &str) -> Result<Process, Box<dyn std::error::Error>> {
+    fn new(stat: &str, name: Option<String>) -> Result<Process, Box<dyn std::error::Error>> {
         let mut stats = StatParser::parse(Rule::line, stat).expect("Hello");
         println!("{} {}", stat, stats.len());
         Ok(Process {
+            user_name: name,
             pid: stats.next().unwrap().as_str().parse()?,
             command: stats.next().unwrap().as_str().parse()?,
             state: State::from_str(stats.next().unwrap().as_str())?,
@@ -192,6 +194,12 @@ impl PParser for Processes {
                 let entry = entry.expect("");
                 let path = entry.path();
 
+                let name = path
+                    .metadata()
+                    .map(|metadata| uzers::get_user_by_uid(metadata.uid()))
+                    .map(|user| user.unwrap().name().to_str().unwrap().to_string())
+                    .ok();
+
                 let folder_name = path.file_name().unwrap();
 
                 let x = folder_name
@@ -203,7 +211,7 @@ impl PParser for Processes {
                 if x {
                     let str = &fs::read_to_string(entry.path().join("stat")).expect("msg");
 
-                    Some(Process::new(str).unwrap())
+                    Some(Process::new(str, name).unwrap())
                 } else {
                     None
                 }
@@ -218,11 +226,11 @@ mod test {
 
     #[test]
     fn test_parse() {
-        Process::new("1 (systemd) S 0 1 1 0 -1 4194560 643700 109464643 189 69440 268 818 7489706 1155578 20 0 1 0 12 23293952 3585 18446744073709551615 1 1 0 0 0 0 671173123 4096 1260 0 0 0 17 5 0 0 0 0 0 0 0 0 0 0 0 0 0\n").expect("");
+        Process::new("1 (systemd) S 0 1 1 0 -1 4194560 643700 109464643 189 69440 268 818 7489706 1155578 20 0 1 0 12 23293952 3585 18446744073709551615 1 1 0 0 0 0 671173123 4096 1260 0 0 0 17 5 0 0 0 0 0 0 0 0 0 0 0 0 0\n", Some("jeff".into())).expect("");
     }
 
     #[test]
     fn test_parse_2() {
-        Process::new("252201 (kworker/u33:3+i915_flip) D 2 0 0 0 -1 69238880 0 0 0 0 0 282 0 0 0 -20 1 0 16881972 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 0 0 0 17 8 0 0 0 0 0 0 0 0 0 0 0 0 0\n").expect("");
+        Process::new("252201 (kworker/u33:3+i915_flip) D 2 0 0 0 -1 69238880 0 0 0 0 0 282 0 0 0 -20 1 0 16881972 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 0 0 0 17 8 0 0 0 0 0 0 0 0 0 0 0 0 0\n", Some("jeff".into())).expect("");
     }
 }
