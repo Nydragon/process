@@ -19,6 +19,8 @@ pest = { version = "2.7.5" }
 pest_derive = { version = "2.7.5" }
 serde = { version = "1.0.*", features = ["derive"] }
 uzers = "*"
+colog = "*"
+log = "*"
 
 [dev-dependencies.cargo-husky]
 version = "1"
