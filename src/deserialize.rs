@@ -90,10 +90,7 @@ where
                 Err(DeError::TrailingCharacters)
             }
         }
-        Err(e) => {
-            println!("{}", e);
-            Err(DeError::SerdeError(e))
-        }
+        Err(e) => Err(DeError::SerdeError(e)),
     }
 }
 
