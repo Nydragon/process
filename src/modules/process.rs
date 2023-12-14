@@ -126,7 +126,8 @@ pub struct Process {
 impl Process {
     fn new(stat: &str, name: Option<String>) -> Result<Process, Box<dyn std::error::Error>> {
         let mut stats = StatParser::parse(Rule::line, stat).expect("Hello");
-        println!("{} {}", stat, stats.len());
+        log::debug!("{}", stat);
+
         Ok(Process {
             user_name: name,
             pid: stats.next().unwrap().as_str().parse()?,
