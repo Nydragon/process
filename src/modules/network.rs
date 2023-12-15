@@ -28,7 +28,7 @@ impl Parser for Network {
     {
         let mut hash: HashMap<String, NetworkDevice> = HashMap::new();
 
-        fs::read_dir(DEVICE_DIR).ok().map(|dir| {
+        if let Ok(dir) = fs::read_dir(DEVICE_DIR) {
             dir.for_each(|dir| {
                 let dir = dir.unwrap();
                 let x = dir.file_name().to_str().map(|s| s.to_string());
@@ -40,7 +40,7 @@ impl Parser for Network {
                     None
                 };
             })
-        });
+        };
 
         Ok(Network { devices: hash })
     }

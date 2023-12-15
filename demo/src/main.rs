@@ -1,7 +1,6 @@
 use process::{
-    modules::{cpu::CPUs, memory::Memory},
+    modules::{cpu::CPUs, memory::Memory, process::Processes},
     parser::Parser,
-    process::Processes,
 };
 
 fn main() {
