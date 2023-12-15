@@ -1,7 +1,7 @@
 use crate::parser::{DataError, Parser as PParser};
 use pest::Parser;
 use serde::{Deserialize, Serialize};
-use std::{fs, os::unix::fs::MetadataExt, str::FromStr};
+use std::{fmt::Error, fs, os::unix::fs::MetadataExt, str::FromStr};
 
 pub type Processes = Vec<Process>;
 
@@ -31,7 +31,7 @@ impl FromStr for State {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.chars().next().unwrap() {
+        match s.chars().next().ok_or("No State")? {
             'S' => Ok(State::S),
             'I' => Ok(State::I),
             'R' => Ok(State::R),
@@ -125,63 +125,68 @@ pub struct Process {
 
 impl Process {
     fn new(stat: &str, name: Option<String>) -> Result<Process, Box<dyn std::error::Error>> {
-        let mut stats = StatParser::parse(Rule::line, stat).expect("Hello");
         log::debug!("{}", stat);
 
+        let stats: Vec<_> = StatParser::parse(Rule::line, stat)?.collect();
+
+        // not 52 because it contains EOI
+        if stats.len() != 53 {
+            return Err(Box::new(Error));
+        }
         Ok(Process {
             user_name: name,
-            pid: stats.next().unwrap().as_str().parse()?,
-            command: stats.next().unwrap().as_str().parse()?,
-            state: State::from_str(stats.next().unwrap().as_str())?,
-            ppid: stats.next().unwrap().as_str().parse()?,
-            pgrp: stats.next().unwrap().as_str().parse()?,
-            session: stats.next().unwrap().as_str().parse()?,
-            tty_nr: stats.next().unwrap().as_str().parse()?,
-            tpgid: stats.next().unwrap().as_str().parse()?,
-            flags: stats.next().unwrap().as_str().parse()?,
-            minflit: stats.next().unwrap().as_str().parse()?,
-            cminflit: stats.next().unwrap().as_str().parse()?,
-            majflt: stats.next().unwrap().as_str().parse()?,
-            cmajflt: stats.next().unwrap().as_str().parse()?,
-            utime: stats.next().unwrap().as_str().parse()?,
-            stime: stats.next().unwrap().as_str().parse()?,
-            cutime: stats.next().unwrap().as_str().parse()?,
-            cstime: stats.next().unwrap().as_str().parse()?,
-            priority: stats.next().unwrap().as_str().parse()?,
-            nice: stats.next().unwrap().as_str().parse()?,
-            num_threads: stats.next().unwrap().as_str().parse()?,
-            itrealvalue: stats.next().unwrap().as_str().parse()?,
-            starttime: stats.next().unwrap().as_str().parse()?,
-            vsize: stats.next().unwrap().as_str().parse()?,
-            rss: stats.next().unwrap().as_str().parse()?,
-            rsslim: stats.next().unwrap().as_str().parse()?,
-            startcode: stats.next().unwrap().as_str().parse()?,
-            encode: stats.next().unwrap().as_str().parse()?,
-            startstack: stats.next().unwrap().as_str().parse()?,
-            kstkep: stats.next().unwrap().as_str().parse()?,
-            kstkeip: stats.next().unwrap().as_str().parse()?,
-            signal: stats.next().unwrap().as_str().parse()?,
-            blocked: stats.next().unwrap().as_str().parse()?,
-            sigignore: stats.next().unwrap().as_str().parse()?,
-            sigcatch: stats.next().unwrap().as_str().parse()?,
-            wchan: stats.next().unwrap().as_str().parse()?,
-            nswap: stats.next().unwrap().as_str().parse()?,
-            cnswap: stats.next().unwrap().as_str().parse()?,
-            exit_signal: stats.next().unwrap().as_str().parse()?,
-            processor: stats.next().unwrap().as_str().parse()?,
-            rt_priotiy: stats.next().unwrap().as_str().parse()?,
-            policy: stats.next().unwrap().as_str().parse()?,
-            delayacct_blkio_ticks: stats.next().unwrap().as_str().parse()?,
-            guest_time: stats.next().unwrap().as_str().parse()?,
-            cguest_time: stats.next().unwrap().as_str().parse()?,
-            start_data: stats.next().unwrap().as_str().parse()?,
-            end_data: stats.next().unwrap().as_str().parse()?,
-            start_brk: stats.next().unwrap().as_str().parse()?,
-            arg_start: stats.next().unwrap().as_str().parse()?,
-            arg_end: stats.next().unwrap().as_str().parse()?,
-            env_start: stats.next().unwrap().as_str().parse()?,
-            env_end: stats.next().unwrap().as_str().parse()?,
-            exit: stats.next().unwrap().as_str().parse()?,
+            pid: stats[0].as_str().parse()?,
+            command: stats[1].as_str().parse()?,
+            state: State::from_str(stats[2].as_str())?,
+            ppid: stats[3].as_str().parse()?,
+            pgrp: stats[4].as_str().parse()?,
+            session: stats[5].as_str().parse()?,
+            tty_nr: stats[6].as_str().parse()?,
+            tpgid: stats[7].as_str().parse()?,
+            flags: stats[8].as_str().parse()?,
+            minflit: stats[9].as_str().parse()?,
+            cminflit: stats[10].as_str().parse()?,
+            majflt: stats[11].as_str().parse()?,
+            cmajflt: stats[12].as_str().parse()?,
+            utime: stats[13].as_str().parse()?,
+            stime: stats[14].as_str().parse()?,
+            cutime: stats[15].as_str().parse()?,
+            cstime: stats[16].as_str().parse()?,
+            priority: stats[17].as_str().parse()?,
+            nice: stats[18].as_str().parse()?,
+            num_threads: stats[19].as_str().parse()?,
+            itrealvalue: stats[20].as_str().parse()?,
+            starttime: stats[21].as_str().parse()?,
+            vsize: stats[22].as_str().parse()?,
+            rss: stats[23].as_str().parse()?,
+            rsslim: stats[24].as_str().parse()?,
+            startcode: stats[25].as_str().parse()?,
+            encode: stats[26].as_str().parse()?,
+            startstack: stats[27].as_str().parse()?,
+            kstkep: stats[28].as_str().parse()?,
+            kstkeip: stats[29].as_str().parse()?,
+            signal: stats[30].as_str().parse()?,
+            blocked: stats[31].as_str().parse()?,
+            sigignore: stats[32].as_str().parse()?,
+            sigcatch: stats[33].as_str().parse()?,
+            wchan: stats[34].as_str().parse()?,
+            nswap: stats[35].as_str().parse()?,
+            cnswap: stats[36].as_str().parse()?,
+            exit_signal: stats[37].as_str().parse()?,
+            processor: stats[38].as_str().parse()?,
+            rt_priotiy: stats[39].as_str().parse()?,
+            policy: stats[40].as_str().parse()?,
+            delayacct_blkio_ticks: stats[41].as_str().parse()?,
+            guest_time: stats[42].as_str().parse()?,
+            cguest_time: stats[43].as_str().parse()?,
+            start_data: stats[44].as_str().parse()?,
+            end_data: stats[45].as_str().parse()?,
+            start_brk: stats[46].as_str().parse()?,
+            arg_start: stats[47].as_str().parse()?,
+            arg_end: stats[48].as_str().parse()?,
+            env_start: stats[49].as_str().parse()?,
+            env_end: stats[50].as_str().parse()?,
+            exit: stats[51].as_str().parse()?,
         })
     }
 }
@@ -201,18 +206,20 @@ impl PParser for Processes {
                     .map(|user| user.unwrap().name().to_str().unwrap().to_string())
                     .ok();
 
-                let folder_name = path.file_name().unwrap();
+                let is_process = path.file_name().is_some_and(|folder_name| {
+                    // Verify if folder is all digits -> then its a process
+                    folder_name
+                        .to_str()
+                        .unwrap()
+                        .chars()
+                        .all(|c| c.is_ascii_digit())
+                });
 
-                let x = folder_name
-                    .to_str()
-                    .unwrap()
-                    .chars()
-                    .all(|c| c.is_ascii_digit());
-
-                if x {
-                    let str = &fs::read_to_string(entry.path().join("stat")).expect("msg");
-
-                    Some(Process::new(str, name).unwrap())
+                if is_process {
+                    match &fs::read_to_string(entry.path().join("stat")) {
+                        Ok(str) => Process::new(str, name).ok(),
+                        Err(_) => None,
+                    }
                 } else {
                     None
                 }
