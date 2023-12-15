@@ -50,7 +50,6 @@ impl NetworkDevice {
     fn parse(dir: DirEntry) -> NetworkDevice {
         let rxf = dir.path().join("statistics/rx_bytes");
         let txf = dir.path().join("statistics/tx_bytes");
-        println!("{:?} ", fs::read_to_string(rxf.clone()));
 
         let rx = fs::read_to_string(rxf)
             .ok()
